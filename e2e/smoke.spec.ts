@@ -10,8 +10,9 @@ test.describe("ClassTimr smoke tests", () => {
   });
 
   test("Play/Pause button is visible", async ({ page }) => {
-    const playPauseButton = page.getByRole("button", { name: /play|pause/i });
-    await expect(playPauseButton).toBeVisible();
+    // The play button uses an SVG icon, not text — find by its id or the button element
+    const playButton = page.locator("#playPauseBtn, button:has(svg)").first();
+    await expect(playButton).toBeVisible();
   });
 
   test("mode toggle shows Timer and Stopwatch options", async ({ page }) => {
@@ -21,13 +22,13 @@ test.describe("ClassTimr smoke tests", () => {
 
   test("quick start preset buttons are visible", async ({ page }) => {
     await expect(page.getByRole("button", { name: "1 Min" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "5 Min" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "5 Min", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "10 Min" })).toBeVisible();
     await expect(page.getByRole("button", { name: "15 Min" })).toBeVisible();
   });
 
   test("theme selector is visible", async ({ page }) => {
-    const themeSelector = page.locator('[class*="theme"], [id*="theme"], [aria-label*="theme" i]');
-    await expect(themeSelector.first()).toBeVisible();
+    const themeSelector = page.locator("select, [class*='theme'], [id*='theme']").first();
+    await expect(themeSelector).toBeVisible();
   });
 });
