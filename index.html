@@ -225,6 +225,7 @@
             <div class="flex bg-gray-800/80 border border-gray-600 rounded-lg p-0.5">
                 <button id="btn-mode-timer" onclick="switchMode('timer')" class="px-4 py-1.5 rounded-md text-sm font-medium transition bg-purple-600 text-white">Timer</button>
                 <button id="btn-mode-stopwatch" onclick="switchMode('stopwatch')" class="px-4 py-1.5 rounded-md text-sm font-medium transition text-gray-400 hover:text-white">Stopwatch</button>
+                <button id="btn-mode-clock" onclick="switchMode('clock')" class="px-4 py-1.5 rounded-md text-sm font-medium transition text-gray-400 hover:text-white">Clock</button>
             </div>
             <div id="quick-start-section" class="flex flex-col items-center">
                 <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2">Quick Start</span>
@@ -289,6 +290,8 @@
         let timerInterval = null;
         let isRunning = false;
         let isStopwatchMode = false;
+        let isClockMode = false;
+        let clockInterval = null;
         let elapsedTime = 0;
         let timerStartedAt = null;  // Date.now() when timer was started
         let timerStartValue = 0;    // timeRemaining or elapsedTime at start
@@ -299,6 +302,10 @@
         const btnPlay = document.getElementById('btn-play');
 
         function updateDisplay() {
+            if (isClockMode) {
+                updateClockDisplay();
+                return;
+            }
             let t = isStopwatchMode ? elapsedTime : timeRemaining;
             let minutes = Math.floor(t / 60);
             let seconds = t % 60;
@@ -318,7 +325,20 @@
             }
         }
 
+        function updateClockDisplay() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            const formattedTime = hours.toString().padStart(2, '0') + ':' + minutes + ':' + seconds;
+            timeDisplay.textContent = formattedTime;
+            document.title = `${formattedTime} ${ampm} - ClassTimr`;
+        }
+
         function togglePlayPause() {
+            if (isClockMode) return;
             if (!isStopwatchMode && timeRemaining <= 0 && !isRunning) {
                 timeRemaining = initialTime;
                 updateDisplay();
@@ -379,7 +399,11 @@
         function resetTimer() {
             clearInterval(timerInterval);
             isRunning = false;
-            if (isStopwatchMode) {
+            if (isClockMode) {
+                // Clock mode doesn't need reset — just update display
+                updateClockDisplay();
+                return;
+            } else if (isStopwatchMode) {
                 elapsedTime = 0;
             } else {
                 timeRemaining = initialTime;
@@ -396,25 +420,46 @@
         }
 
         function switchMode(mode) {
-            const newIsStopwatch = (mode === 'stopwatch');
-            if (newIsStopwatch === isStopwatchMode) return;
-            isStopwatchMode = newIsStopwatch;
+            // Stop clock interval if leaving clock mode
+            if (isClockMode && mode !== 'clock') {
+                clearInterval(clockInterval);
+                clockInterval = null;
+            }
+
+            isStopwatchMode = (mode === 'stopwatch');
+            isClockMode = (mode === 'clock');
             resetTimer();
+
             const btnTimer = document.getElementById('btn-mode-timer');
             const btnStopwatch = document.getElementById('btn-mode-stopwatch');
+            const btnClock = document.getElementById('btn-mode-clock');
             const quickStart = document.getElementById('quick-start-section');
-            if (isStopwatchMode) {
-                btnStopwatch.classList.add('bg-purple-600', 'text-white');
-                btnStopwatch.classList.remove('text-gray-400', 'hover:text-white');
-                btnTimer.classList.remove('bg-purple-600', 'text-white');
-                btnTimer.classList.add('text-gray-400', 'hover:text-white');
+            const playControls = document.querySelector('.flex.items-center.space-x-4.md\\:w-1\\/4:first-child') || btnPlay.parentElement;
+
+            // Reset all mode buttons
+            [btnTimer, btnStopwatch, btnClock].forEach(btn => {
+                btn.classList.remove('bg-purple-600', 'text-white');
+                btn.classList.add('text-gray-400', 'hover:text-white');
+            });
+
+            // Highlight active mode
+            const activeBtn = mode === 'timer' ? btnTimer : mode === 'stopwatch' ? btnStopwatch : btnClock;
+            activeBtn.classList.add('bg-purple-600', 'text-white');
+            activeBtn.classList.remove('text-gray-400', 'hover:text-white');
+
+            // Show/hide quick start and play controls
+            if (isClockMode) {
                 quickStart.classList.add('hidden');
+                playControls.style.visibility = 'hidden';
+                clockInterval = setInterval(updateClockDisplay, 1000);
+                updateClockDisplay();
             } else {
-                btnTimer.classList.add('bg-purple-600', 'text-white');
-                btnTimer.classList.remove('text-gray-400', 'hover:text-white');
-                btnStopwatch.classList.remove('bg-purple-600', 'text-white');
-                btnStopwatch.classList.add('text-gray-400', 'hover:text-white');
-                quickStart.classList.remove('hidden');
+                playControls.style.visibility = 'visible';
+                if (isStopwatchMode) {
+                    quickStart.classList.add('hidden');
+                } else {
+                    quickStart.classList.remove('hidden');
+                }
             }
         }
 
