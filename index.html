@@ -315,9 +315,12 @@
                 return;
             }
             let t = isStopwatchMode ? elapsedTime : timeRemaining;
-            let minutes = Math.floor(t / 60);
+            let hours = Math.floor(t / 3600);
+            let minutes = Math.floor((t % 3600) / 60);
             let seconds = t % 60;
-            let formattedTime = minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+            let formattedTime = hours > 0
+                ? hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0')
+                : minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
             timeDisplay.textContent = formattedTime;
             document.title = `${formattedTime} - ClassTimr`;
 
